@@ -168,7 +168,7 @@ def main(args):
             ax[b, -1].set_title(f'{layer_names[i]}\nheatmap only',fontsize=9)
 
         fig.suptitle('GradCAM MNIST')
-        if args.save:
+        if args.save_plot:
             Path('pic/svg').mkdir(exist_ok=True)
             Path('pic/png').mkdir(exist_ok=True)
             plt.savefig(f'pic/svg/gradcam_mnist.svg')
@@ -179,8 +179,8 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='GradCAM MNIST')
     parser.add_argument('--sample-index', '-s', type=int, default=0)
-    parser.add_argument('--batch_size', '-b', type=int, default=2)
-    parser.add_argument('--save', '-sv', action='store_true')
+    parser.add_argument('--batch-size', '-b', type=int, default=2)
+    parser.add_argument('--save-plot', '-sp', action='store_true')
     parser.add_argument('--model-name', '-m', type=str, default='model.hdf5')
     args = parser.parse_args()
 
