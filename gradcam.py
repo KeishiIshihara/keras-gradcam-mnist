@@ -62,10 +62,9 @@ def grad_cam_batch(model, x, y, num_classes, layer_name, target_only_category):
         target_layer = lambda x: target_category_loss(x[0], x[1], num_classes)
         model_output = model.layers[-1].output
         output = tf.keras.layers.Lambda(target_layer, output_shape=target_category_loss_output_shape)([model_output, input_gt_label])
-        model = tf.keras.models.Model(inputs=[model.layers[0].input,input_gt_label], outputs=output)
+        model = tf.keras.models.Model(inputs=[model.input,input_gt_label], outputs=output)
 
-    conv_output = model.get_layer(layer_name).output   # layer_nameのレイヤーのアウトプット
-    conv_layer = model.get_layer(layer_name)   # layer_nameのレイヤーのアウトプット
+    conv_layer = model.get_layer(layer_name)
     gradcam_model = tf.keras.models.Model([model.inputs], [conv_layer.output, model.output])
 
     # Get gradient of the winner class w.r.t. the output of the (last) conv. layer
@@ -74,7 +73,8 @@ def grad_cam_batch(model, x, y, num_classes, layer_name, target_only_category):
         predicted_cls = np.argmax(predictions, axis=1)
         model_output = tf.reduce_sum(predictions, axis=1)
         grads = tape.gradient(model_output, conv_output)
-        weights = normalize(K.mean(grads, axis=(1, 2))) # grads.shape = (batch, h, w, c) -> (batch, c)
+        # weights = normalize(K.mean(grads, axis=(1, 2))) # grads.shape = (batch, h, w, c) -> (batch, c)
+        weights = normalize(tf.reduce_mean(grads, axis=(1, 2))) # grads.shape = (batch, h, w, c) -> (batch, c)
 
     # w * conv -> (b, h, w, c) -> reduce_mean -> (b, h, w)
     # multiply -> (b, h, w, c)
@@ -104,29 +104,26 @@ def grad_cam_batch(model, x, y, num_classes, layer_name, target_only_category):
 
 
 def main(args):
-
     sample_index = args.sample_index
     batch_size = args.batch_size
-    plot = True
+    save = args.save_plot
 
     num_classes = 10
-    layer_names = ['conv2d_1', 'conv_last', 'activation_2']
 
     model = tf.keras.models.load_model(f'model/{args.model_name}')
     model.summary()
 
     layer_names = [l.name for l in model.layers if 'conv' in l.name]
-    if len(layer_names) > 3:
-        layer_names = layer_names[::-1][:3][::-1]
-    print(layer_names)
+    layer_names = layer_names[::-1][1:3][::-1]
+    print('target conv lyaers:', layer_names)
 
-    (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
+    _, (x_test, y_test) = tf.keras.datasets.mnist.load_data()
     x_test = x_test / 255.
     x_test = x_test.reshape((-1, 28, 28, 1))
     y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
-    x = x_test[sample_index:sample_index + batch_size]
-    y = y_test[sample_index:sample_index + batch_size]
+    x = x_test[sample_index : sample_index + batch_size]
+    y = y_test[sample_index : sample_index + batch_size]
     print('Input data shape')
     print(f'x: {x.shape}, y: {y.shape}')
 
@@ -150,31 +147,33 @@ def main(args):
             grays += [cv2.cvtColor(gray, cv2.COLOR_BGR2RGB)]
         graycams.append(grays)
 
-    if plot:
-        w = (1 + len(layer_names) + 1)
-        h = batch_size
-        fig, ax = plt.subplots(h, w, figsize=(w*1.5, h*2))
-        batch_gt_labels = np.argmax(y, axis=1)
-        for b in range(batch_size):
-            # input image
-            c = ax[b,0].imshow(x[b].reshape((28,28)), cmap='gray')
-            ax[b,0].set_title(f'gt:{batch_gt_labels[b]}, pred:{predictions[b]}', fontsize=11)
-            # gradcam
-            for i in range(len(layer_names)):
-                c = ax[b, i+1].imshow(jetcams[i][b], cmap='jet')
-                ax[b, i+1].set_title(layer_names[i])
-            # last layer's heatmap
-            c = ax[b, -1].imshow(graycams[-1][b],cmap='jet')
-            ax[b, -1].set_title(f'{layer_names[i]}\nheatmap only',fontsize=9)
+    # plot
+    w = (1 + len(layer_names) + 1)
+    h = batch_size
+    batch_gt_labels = np.argmax(y, axis=1)
 
-        fig.suptitle('GradCAM MNIST')
-        if args.save_plot:
-            Path('pic/svg').mkdir(exist_ok=True)
-            Path('pic/png').mkdir(exist_ok=True)
-            plt.savefig(f'pic/svg/gradcam_mnist.svg')
-            plt.savefig(f'pic/png/gradcam_mnist.png')
-        plt.show()
-        plt.close()
+    fig, ax = plt.subplots(h, w, figsize=(w*1.5, h*2))
+    for b in range(batch_size):
+        # input image
+        c = ax[b,0].imshow(x[b].reshape((28,28)), cmap='gray')
+        ax[b,0].set_title(f'gt:{batch_gt_labels[b]}, pred:{predictions[b]}', fontsize=11)
+        # gradcam
+        for i in range(len(layer_names)):
+            c = ax[b, i+1].imshow(jetcams[i][b], cmap='jet')
+            ax[b, i+1].set_title(layer_names[i])
+        # last layer's heatmap
+        c = ax[b, -1].imshow(graycams[-1][b],cmap='jet')
+        ax[b, -1].set_title(f'{layer_names[i]}\nheatmap only',fontsize=9)
+
+    fig.suptitle('GradCAM MNIST')
+
+    if save:
+        Path('pic/svg').mkdir(exist_ok=True)
+        Path('pic/png').mkdir(exist_ok=True)
+        plt.savefig(f'pic/svg/gradcam_mnist.svg')
+        plt.savefig(f'pic/png/gradcam_mnist.png')
+    plt.show()
+    plt.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='GradCAM MNIST')
