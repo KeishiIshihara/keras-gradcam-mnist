@@ -8,7 +8,7 @@ import pathlib
 import tensorflow as tf
 from tensorflow.keras import backend as K
 
-batch_size = 128
+batch_size = 256
 num_classes = 10
 epochs = 10
 
@@ -35,20 +35,20 @@ y_train = tf.keras.utils.to_categorical(y_train, num_classes)
 y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
 model = tf.keras.models.Sequential()
-model.add(tf.keras.layers.Conv2D(16, kernel_size=(3, 3), input_shape=input_shape, padding='same'))
-model.add(tf.keras.layers.Activation('relu'))
-model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
-model.add(tf.keras.layers.Conv2D(32, (3, 3), padding='same'))
+model.add(tf.keras.layers.Conv2D(32, kernel_size=(3, 3), input_shape=input_shape, padding='same'))
+model.add(tf.keras.layers.Dropout(0.25))
 model.add(tf.keras.layers.Activation('relu'))
 model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
 model.add(tf.keras.layers.Conv2D(64, (3, 3), padding='same'))
+model.add(tf.keras.layers.Dropout(0.25))
 model.add(tf.keras.layers.Activation('relu'))
 model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
 model.add(tf.keras.layers.Conv2D(128, (3, 3), padding='same'))
-model.add(tf.keras.layers.Activation('relu'))
 model.add(tf.keras.layers.Dropout(0.25))
+model.add(tf.keras.layers.Activation('relu'))
+model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
 model.add(tf.keras.layers.Flatten())
-model.add(tf.keras.layers.Dense(64, activation='relu'))
+model.add(tf.keras.layers.Dense(128, activation='relu'))
 model.add(tf.keras.layers.Dropout(0.5))
 model.add(tf.keras.layers.Dense(num_classes, activation='softmax'))
 
