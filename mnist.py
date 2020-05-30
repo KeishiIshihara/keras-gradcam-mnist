@@ -10,7 +10,7 @@ from tensorflow.keras import backend as K
 
 batch_size = 128
 num_classes = 10
-epochs = 20
+epochs = 10
 
 # input image dimensions
 img_rows, img_cols = 28, 28
@@ -35,15 +35,16 @@ y_train = tf.keras.utils.to_categorical(y_train, num_classes)
 y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
 model = tf.keras.models.Sequential()
-model.add(tf.keras.layers.Conv2D(32, kernel_size=(3, 3), input_shape=input_shape))
+model.add(tf.keras.layers.Conv2D(16, kernel_size=(3, 3), input_shape=input_shape, padding='same'))
 model.add(tf.keras.layers.Activation('relu'))
 model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
-model.add(tf.keras.layers.Conv2D(64, (3, 3)))
+model.add(tf.keras.layers.Conv2D(32, (3, 3), padding='same'))
 model.add(tf.keras.layers.Activation('relu'))
 model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
-model.add(tf.keras.layers.Conv2D(128, (3, 3)))
+model.add(tf.keras.layers.Conv2D(64, (3, 3), padding='same'))
 model.add(tf.keras.layers.Activation('relu'))
-model.add(tf.keras.layers.Conv2D(128, (3, 3), name='conv_last'))
+model.add(tf.keras.layers.MaxPooling2D(pool_size=(2, 2)))
+model.add(tf.keras.layers.Conv2D(128, (3, 3), padding='same'))
 model.add(tf.keras.layers.Activation('relu'))
 model.add(tf.keras.layers.Dropout(0.25))
 model.add(tf.keras.layers.Flatten())
