@@ -107,18 +107,18 @@ def main(args):
 
     sample_index = args.sample_index
     batch_size = args.batch_size
-    plot = args.plot
+    plot = True
 
     num_classes = 10
     layer_names = ['conv2d_1', 'conv_last', 'activation_2']
 
-    model = tf.keras.models.load_model(args.model_name)
+    model = tf.keras.models.load_model(f'model/{args.model_name}')
     model.summary()
 
     layer_names = [l.name for l in model.layers if 'conv' in l.name]
-    print(layer_names)
     if len(layer_names) > 3:
         layer_names = layer_names[::-1][:3][::-1]
+    print(layer_names)
 
     (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
     x_test = x_test / 255.
@@ -168,10 +168,11 @@ def main(args):
             ax[b, -1].set_title(f'{layer_names[i]}\nheatmap only',fontsize=9)
 
         fig.suptitle('GradCAM MNIST')
-        Path('pic/svg').mkdir(exist_ok=True)
-        Path('pic/png').mkdir(exist_ok=True)
-        plt.savefig(f'pic/svg/gradcam_mnist.svg')
-        plt.savefig(f'pic/png/gradcam_mnist.png')
+        if args.save:
+            Path('pic/svg').mkdir(exist_ok=True)
+            Path('pic/png').mkdir(exist_ok=True)
+            plt.savefig(f'pic/svg/gradcam_mnist.svg')
+            plt.savefig(f'pic/png/gradcam_mnist.png')
         plt.show()
         plt.close()
 
@@ -179,7 +180,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='GradCAM MNIST')
     parser.add_argument('--sample-index', '-s', type=int, default=0)
     parser.add_argument('--batch_size', '-b', type=int, default=2)
-    parser.add_argument('--plot', '-p', action='store_true')
+    parser.add_argument('--save', '-sv', action='store_true')
     parser.add_argument('--model-name', '-m', type=str, default='model.hdf5')
     args = parser.parse_args()
 
